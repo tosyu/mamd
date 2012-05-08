@@ -1,5 +1,6 @@
 /*----- LICENSE ------------------------------------------------------
  * Copyright (c) 2012 Krzysztof Antoszek <krzysztof (at) antoszek.net>
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
  * (the "Software"), to deal in the Software without restriction,
@@ -21,118 +22,197 @@
  * SOFTWARE.
  * ---------------------------------------------------------------- */
 
-(function (window, document, undefined) {
+/*jslint plusplus: true, maxerr: 50, indent: 4 */
+/*global window: true, document: true*/
 
-    var defined = {};
-    var loading = [];
-    var waiting = [];
-    var head = document.getElementsByTagName("head")[0];
+(function (window, document) {
 
-    var loadRequired = function () {
-        var i = 0,
-            imax = loading.length,
-            script;
-        for (; i < imax; i++) {
-            script = document.createElement('script');
-            script.src = [loading[i].replace(/\./gi, "/"), 'js'].join('.');
-            script.defer = true;
-            script.async = true;
-            head.appendChild(script);
-            loading.splice(i, 1);
-        }
-    };
+    "use strict";
 
-    var require = function (classPaths, callback) {
-        var i = 0,
-            imax = classPaths.length,
-            reqsDefined = true,
-            params = [];
-        for (; i < imax; i++) {
-            if (!(classPaths[i] in defined)) {
-                reqsDefined = false;
-                loading.push(classPaths[i]);
-            } else {
-                params.push(defined[classPaths[i]]);
+    /**
+     * Internal object cache
+     * @type {Object}
+     */
+    var defined = {},
+
+        /**
+         * Defines a list of namespaces to be loaded
+         * @type {Array}
+         */
+        loading = [],
+
+        /**
+         * Defines a list of callbacks to be run
+         * @type {Array}
+         */
+        waiting = [],
+
+        /**
+         * The head element of the page
+         * @type {Node}
+         */
+        head = document.getElementsByTagName("head")[0],
+
+        /**
+         * Iterates through loading array and creates script tags to load
+         * specified namespace paths. Dots in namespaces will be converted
+         * to slashes, so a test1.test2.Object will be converted to
+         * test1/test2/Object.js and that script will be loaded
+         * @function
+         */
+        loadRequired = function () {
+            var script,
+                loadingCopy = loading.concat().reverse(),
+                i = loading.length;
+
+            while (--i >= 0) {
+                script = document.createElement("script");
+                script.src = [loadingCopy[i].replace(/\./gi, "/"), "js"].join(".");
+                script.defer = true;
+                script.async = true;
+                head.appendChild(script);
+                loadingCopy.splice(i, 1);
             }
-        }
 
-        if (reqsDefined === true) {
-            callback.apply(null, params);
-        } else {
-            waiting.push([classPaths, callback]);
-        }
-        loadRequired();
-    };
+            loading = loadingCopy.reverse();
+        },
 
-    var checkWaiting = function () {
-        var i = waiting.length;
-        while (--i >= 0) {
-            var callback = waiting[i][1],
-                params = [],
+        /**
+         * Loads supplied array of class namespace paths and passes the
+         * results to callback
+         * @function
+         * @param {Array} namespaces
+         * @param {Function} callback
+         */
+        require = function (namespaces, callback) {
+            var i,
+                imax = namespaces.length,
                 reqsDefined = true,
-                x = 0,
-                xmax = waiting[i][0].length;
-            for (; x < xmax; x++) {
-                if (!(waiting[i][0][x] in defined)) {
+                params = [];
+            for (i = 0; i < imax; i++) {
+                if (typeof defined[namespaces[i]] === "undefined") {
                     reqsDefined = false;
+                    loading.push(namespaces[i]);
                 } else {
-                    params.push(defined[waiting[i][0][x]]);
+                    params.push(defined[namespaces[i]]);
                 }
             }
+
             if (reqsDefined === true) {
-                waiting.splice(i, 1);
                 callback.apply(null, params);
-            }
-        }
-    };
-
-    var createLeaf = function (branch, leafPath, value) {
-        var leaf = leafPath.pop();
-        if (leafPath.length > 0) {
-            if (leaf in branch) {
-                if (typeof branch[leaf] !== 'object'
-                        || branch[leaf] === null) {
-                    throw new Error("mamd.provide(): Cannot create leaf if namespace path part is not an object", [].concat(leafPath, leaf), typeof branch[leaf]);
-                }
             } else {
-                branch[leaf] = {};
+                waiting.push([namespaces, callback]);
             }
-            createLeaf(branch[leaf], leafPath, value);
-        } else {
-            branch[leaf] = value;
-        }
-    }
+            loadRequired();
+        },
 
-    var provide = function (namespace, value) {
-        var path = namespace.split('.');
-        defined[namespace] = value;
-        createLeaf(window, path.reverse(), defined[namespace]);
-    };
+        /**
+         * Runs through defined waiting array, checks if required namespa-
+         * ces are loaded and runs the callbacks passing through required
+         * namspaces
+         * @function
+         */
+        checkWaiting = function () {
+            var i = waiting.length,
+                callback,
+                params = [],
+                reqsDefined,
+                x,
+                xmax;
+            while (--i >= 0) {
+                callback = waiting[i][1];
+                params = [];
+                reqsDefined = true;
+                xmax = waiting[i][0].length;
+                for (x = 0; x < xmax; x++) {
+                    if (typeof defined[waiting[i][0][x]] === "undefined") {
+                        reqsDefined = false;
+                    } else {
+                        params.push(defined[waiting[i][0][x]]);
+                    }
+                }
+                if (reqsDefined === true) {
+                    waiting.splice(i, 1);
+                    callback.apply(null, params);
+                }
+            }
+        },
 
-    var define = function (name, requirements, factory) {
-        var args = Array.prototype.slice.call(arguments);
-        if (args.length === 0) {
-            throw new Error("mamd.define(): must have at least 2 parameters, name and factory");
-        }
+        /**
+         * Recursively creates objects in specified branch and assigns
+         * value to the last leaf
+         * @function
+         * @param {Object} branch
+         * @param {Array} leafPath
+         * @param {*} value
+         */
+        createLeaf = function (branch, leafPath, value) {
+            var leaf = leafPath.pop();
+            if (leafPath.length > 0) {
+                if (typeof branch[leaf] !== "undefined") {
+                    if (typeof branch[leaf] !== "object"
+                            || branch[leaf] === null) {
+                        throw new Error("mamd.provide(): Cannot create leaf if namespace path part is not an object", [].concat(leafPath, leaf), typeof branch[leaf]);
+                    }
+                } else {
+                    branch[leaf] = {};
+                }
+                createLeaf(branch[leaf], leafPath, value);
+            } else {
+                branch[leaf] = value;
+            }
+        },
 
-        var fc = args.pop(),
-            reqs = args.length === 2 ? args.pop() : [],
+        /**
+         * Assigns specified value to namespace in the internal object
+         * cache and creates the namespace in window global object
+         * @function
+         * @param {string} namespace
+         * @param {*} value
+         */
+        provide = function (namespace, value) {
+            var path = namespace.split(".");
+            defined[namespace] = value;
+            createLeaf(window, path.reverse(), defined[namespace]);
+        },
+
+        /**
+         * Defines a namespace and assigns the result of the factory
+         * function to it. If required namespaces are specified, then
+         * they will be loaded first and passed to factory function as
+         * parameters
+         * @function
+         * @param {string} namespace
+         * @param {=Array} requirements [OPTIONAL]
+         * @param {Function} factory
+         */
+        define = function () {
+            var args = Array.prototype.slice.call(arguments),
+                fc,
+                reqs,
+                nm;
+            if (args.length === 0) {
+                throw new Error("mamd.define(): must have at least 2 parameters, name and factory");
+            }
+
+            fc = args.pop();
+            reqs = args.length === 2 ? args.pop() : [];
             nm = args.pop();
 
-        if (reqs.length > 0) {
-            require(reqs, function () {
-                provide(nm, fc.apply(null, arguments));
-            });
-        } else {
-            provide(nm, fc.apply(null));
-        }
+            if (reqs.length > 0) {
+                require(reqs, function () {
+                    provide(nm, fc.apply(null, arguments));
+                });
+            } else {
+                provide(nm, fc.apply(null));
+            }
 
-        checkWaiting();
-    };
+            checkWaiting();
+        };
 
     window.mamd = {
         "require": require,
         "define": define,
         "provide": provide
     };
-})(window, document);
+}(window, document));

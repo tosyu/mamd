@@ -1,5 +1,6 @@
 /*----- LICENSE ------------------------------------------------------
  * Copyright (c) 2012 Krzysztof Antoszek <krzysztof (at) antoszek.net>
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
  * (the "Software"), to deal in the Software without restriction,
@@ -21,7 +22,6 @@
  * SOFTWARE.
  * ---------------------------------------------------------------- */
 
-
-(function(k,l){var g={},h=[],f=[],o=l.getElementsByTagName("head")[0],m=function(a,e){for(var c=0,b=a.length,d=!0,i=[];c<b;c++)a[c]in g?i.push(g[a[c]]):(d=!1,h.push(a[c]));!0===d?e.apply(null,i):f.push([a,e]);c=0;for(b=h.length;c<b;c++)d=l.createElement("script"),d.src=[h[c].replace(/\./gi,"/"),"js"].join("."),d.defer=!0,d.async=!0,o.appendChild(d),h.splice(c,1)},p=function(){for(var a=f.length;0<=--a;){for(var e=f[a][1],c=[],b=!0,d=0,i=f[a][0].length;d<i;d++)f[a][0][d]in g?c.push(g[f[a][0][d]]):
-b=!1;!0===b&&(f.splice(a,1),e.apply(null,c))}},n=function(a,e,c){var b=e.pop();if(0<e.length){if(b in a){if("object"!==typeof a[b]||null===a[b])throw Error("mamd.provide(): Cannot create leaf if namespace path part is not an object",[].concat(e,b),typeof a[b]);}else a[b]={};n(a[b],e,c)}else a[b]=c},j=function(a,e){var c=a.split(".");g[a]=e;n(k,c.reverse(),g[a])};k.mamd={require:m,define:function(a,e,c){var b=Array.prototype.slice.call(arguments);if(0===b.length)throw Error("mamd.define(): must have at least 2 parameters, name and factory");
-var d=b.pop(),f=2===b.length?b.pop():[],g=b.pop();0<f.length?m(f,function(){j(g,d.apply(null,arguments))}):j(g,d.apply(null));p()},provide:j}})(window,document);
+(function(k,l){var g={},i=[],f=[],o=l.getElementsByTagName("head")[0],m=function(a,d){var b,c=a.length,e=!0,h=[];for(b=0;b<c;b++)"undefined"===typeof g[a[b]]?(e=!1,i.push(a[b])):h.push(g[a[b]]);!0===e?d.apply(null,h):f.push([a,d]);c=i.concat().reverse();for(e=i.length;0<=--e;)b=l.createElement("script"),b.src=[c[e].replace(/\./gi,"/"),"js"].join("."),b.defer=!0,b.async=!0,o.appendChild(b),c.splice(e,1);i=c.reverse()},p=function(){for(var a=f.length,d,b=[],c,e,h;0<=--a;){d=f[a][1];b=[];c=!0;h=f[a][0].length;
+for(e=0;e<h;e++)"undefined"===typeof g[f[a][0][e]]?c=!1:b.push(g[f[a][0][e]]);!0===c&&(f.splice(a,1),d.apply(null,b))}},n=function(a,d,b){var c=d.pop();if(0<d.length){if("undefined"!==typeof a[c]){if("object"!==typeof a[c]||null===a[c])throw Error("mamd.provide(): Cannot create leaf if namespace path part is not an object",[].concat(d,c),typeof a[c]);}else a[c]={};n(a[c],d,b)}else a[c]=b},j=function(a,d){var b=a.split(".");g[a]=d;n(k,b.reverse(),g[a])};k.mamd={require:m,define:function(){var a=Array.prototype.slice.call(arguments),
+d,b,c;if(0===a.length)throw Error("mamd.define(): must have at least 2 parameters, name and factory");d=a.pop();b=2===a.length?a.pop():[];c=a.pop();0<b.length?m(b,function(){j(c,d.apply(null,arguments))}):j(c,d.apply(null));p()},provide:j}})(window,document);
