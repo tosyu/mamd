@@ -69,7 +69,7 @@
             if (leaf in branch) {
                 if (typeof branch[leaf] !== 'object'
                         || branch[leaf] === null) {
-                    throw new Error("Cannot create leaf if namespace path part is not an object", [].concat(leafPath, leaf), typeof branch[leaf]);
+                    throw new Error("mamd.provide(): Cannot create leaf if namespace path part is not an object", [].concat(leafPath, leaf), typeof branch[leaf]);
                 }
             } else {
                 branch[leaf] = {};
@@ -89,7 +89,7 @@
     var define = function (name, requirements, factory) {
         var args = Array.prototype.slice.call(arguments);
         if (args.length === 0) {
-            throw new Error("t.define() must have at least 2 parameters, name and factory");
+            throw new Error("mamd.define(): must have at least 2 parameters, name and factory");
         }
 
         var fc = args.pop(),
