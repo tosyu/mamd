@@ -208,11 +208,21 @@
             }
 
             checkWaiting();
+        },
+
+        /**
+         * The mamd object
+         * @type {Object}
+         */
+        mamd = {
+            "require": require,
+            "define": define,
+            "provide": provide
         };
 
-    window.mamd = {
-        "require": require,
-        "define": define,
-        "provide": provide
-    };
+    if (typeof window.mamd === "undefined") {
+        window.mamd = mamd;
+    } else {
+        window.$mamd = mamd;
+    }
 }(window, document));
