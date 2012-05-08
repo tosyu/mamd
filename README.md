@@ -1,4 +1,4 @@
-mamd
+MicroAMD loader
 ====
 
-MicroAMD
+Simple micro amd module loader
