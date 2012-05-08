@@ -191,7 +191,7 @@
                 fc,
                 reqs,
                 nm;
-            if (args.length === 0) {
+            if (args.length <= 1) {
                 throw new Error("mamd.define(): must have at least 2 parameters, name and factory");
             }
 
